@@ -17,10 +17,12 @@ import androidx.core.content.ContextCompat
 import com.example.zenbreath.ui.screens.HomeScreen
 import com.example.zenbreath.ui.theme.ZenBreathTheme
 import com.example.zenbreath.viewmodel.BreathingViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * Main activity for ZenBreath breathing tracking app
  */
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val viewModel: BreathingViewModel by viewModels()

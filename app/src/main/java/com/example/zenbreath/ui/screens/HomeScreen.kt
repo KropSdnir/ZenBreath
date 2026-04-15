@@ -1,6 +1,7 @@
 package com.example.zenbreath.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -38,6 +39,8 @@ import com.example.zenbreath.ui.components.FireTimerUiState
 import com.example.zenbreath.ui.components.SessionItem
 import com.example.zenbreath.ui.components.dialogs.RepCountDialog
 import com.example.zenbreath.ui.components.dialogs.TimerDurationDialog
+import com.example.zenbreath.ui.screens.home.AdaptiveHomeScreen
+import com.example.zenbreath.ui.screens.home.sections.HomeContent
 import com.example.zenbreath.ui.screens.home.sections.HomeHeader
 import com.example.zenbreath.ui.screens.home.sections.RepCounter
 import com.example.zenbreath.ui.screens.home.sections.RepSelector
@@ -58,17 +61,8 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     
-    // State observation with 2026 Best Practices (collectAsStateWithLifecycle)
-    val timerDuration by viewModel.timerDuration.collectAsStateWithLifecycle()
-    val remainingTime by viewModel.remainingTime.collectAsStateWithLifecycle()
-    val totalReps by viewModel.totalReps.collectAsStateWithLifecycle()
-    val currentRep by viewModel.currentRep.collectAsStateWithLifecycle()
-    val isRunning by viewModel.isRunning.collectAsStateWithLifecycle()
-    val currentHeartRate by viewModel.currentHeartRate.collectAsStateWithLifecycle()
-    val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
-    val filteredSessions by viewModel.filteredSessions.collectAsStateWithLifecycle()
-    val recentSessions by viewModel.recentSessions.collectAsStateWithLifecycle(initialValue = emptyList())
-    val timerColor by viewModel.timerColor.collectAsStateWithLifecycle()
+    // UDF: Single state observation
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
     var showTimerDialog by remember { mutableStateOf(false) }
     var showRepDialog by remember { mutableStateOf(false) }
@@ -102,7 +96,7 @@ fun HomeScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    val filePath = viewModel.exportToCSV(context, recentSessions)
+                    val filePath = viewModel.exportToCSV(context, uiState.recentSessions)
                     Toast.makeText(context, "Sessions exported to: $filePath", Toast.LENGTH_LONG).show()
                 }
             ) {
@@ -110,98 +104,21 @@ fun HomeScreen(
             }
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            item {
-                HomeHeader(
-                    selectedDate = selectedDate,
-                    onDateSelected = { viewModel.setSelectedDate(it) }
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                FireTimer(
-                    uiState = FireTimerUiState(
-                        remainingMillis = remainingTime,
-                        totalMillis = timerDuration,
-                        isFinished = remainingTime <= 0L,
-                        color = Color(timerColor)
-                    )
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                TimerDurationSelector(
-                    timerDurationSeconds = timerDuration / 1000,
-                    onEditClick = { showTimerDialog = true },
-                    isRunning = isRunning
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                RepSelector(
-                    totalReps = totalReps,
-                    onEditClick = { showRepDialog = true },
-                    isRunning = isRunning
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Text(
-                    text = "Heart Rate: ${if (currentHeartRate > 0) "$currentHeartRate BPM" else "---"}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                StartStopButton(
-                    isRunning = isRunning,
-                    onClick = {
-                        if (isRunning) viewModel.stopExercise() else viewModel.startExercise()
-                    }
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                RepCounter(
-                    currentRep = currentRep,
-                    totalReps = totalReps,
-                    isRunning = isRunning,
-                    onResetClick = { viewModel.resetReps() }
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                SessionHistoryHeader()
-            }
-            
-            itemsIndexed(
-                items = filteredSessions,
-                key = { _, session -> session.id }
-            ) { index, session ->
-                SessionItem(
-                    session = session,
-                    index = index,
-                    onDelete = { viewModel.deleteSession(it) }
-                )
-            }
-            
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
-            }
+        // Wrap in a Box to ensure Scaffold padding is respected by the adaptive scaffold
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            AdaptiveHomeScreen(
+                viewModel = viewModel,
+                onTimerDurationEdit = { showTimerDialog = true },
+                onRepCountEdit = { showRepDialog = true },
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
     
-    // Dialogs moved to dedicated components
+    // Dialogs
     if (showTimerDialog) {
         TimerDurationDialog(
-            currentDuration = timerDuration,
+            currentDuration = uiState.timerDuration,
             onDismiss = { showTimerDialog = false },
             onConfirm = { 
                 viewModel.setTimerDuration(it)
@@ -212,7 +129,7 @@ fun HomeScreen(
     
     if (showRepDialog) {
         RepCountDialog(
-            currentReps = totalReps,
+            currentReps = uiState.totalReps,
             onDismiss = { showRepDialog = false },
             onConfirm = { 
                 viewModel.setTotalReps(it)
@@ -223,7 +140,7 @@ fun HomeScreen(
 
     if (showColorDialog) {
         ColorPickerDialog(
-            initialColor = Color(timerColor),
+            initialColor = Color(uiState.timerColor),
             onDismiss = { showColorDialog = false },
             onConfirm = { color ->
                 viewModel.setTimerColor(color.toArgb().toLong())

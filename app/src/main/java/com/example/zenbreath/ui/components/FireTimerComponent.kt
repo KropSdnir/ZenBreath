@@ -35,10 +35,15 @@ fun FireTimer(
     uiState: FireTimerUiState,
     modifier: Modifier = Modifier
 ) {
-    val elapsed = (uiState.totalMillis - uiState.remainingMillis).toFloat()
-    val rawProgress = if (uiState.totalMillis > 0) (elapsed / uiState.totalMillis) else 0f
-    
-    val targetProgress = if (uiState.isFinished) 1.0f else rawProgress.coerceIn(0f, 1f)
+    // Optimization: Use derivedStateOf for progress calculations to avoid 
+    // unnecessary recompositions of the animation if the target hasn't changed.
+    val targetProgress by remember(uiState.remainingMillis, uiState.totalMillis, uiState.isFinished) {
+        derivedStateOf {
+            val elapsed = (uiState.totalMillis - uiState.remainingMillis).toFloat()
+            val rawProgress = if (uiState.totalMillis > 0) (elapsed / uiState.totalMillis) else 0f
+            if (uiState.isFinished) 1.0f else rawProgress.coerceIn(0f, 1f)
+        }
+    }
 
     val animatedProgress by animateFloatAsState(
         targetValue = targetProgress,

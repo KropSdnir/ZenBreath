@@ -50,16 +50,3 @@ fun HomeHeader(
         color = MaterialTheme.colorScheme.primary
     )
 }
-
-@Composable
-fun SessionHistoryHeader(
-    modifier: Modifier = Modifier
-) {
-    Text(
-        text = "Session History",
-        style = MaterialTheme.typography.headlineSmall.copy(
-            fontWeight = FontWeight.Bold
-        ),
-        modifier = modifier.padding(vertical = 8.dp)
-    )
-}

@@ -9,10 +9,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.guava.await
 
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
+
 /**
  * Service to monitor heart rate using Health Services
  */
-class HeartRateService(private val context: Context) {
+@Singleton
+class HeartRateService @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
     private val healthServicesClient = HealthServices.getClient(context)
     private val measureClient = healthServicesClient.measureClient
