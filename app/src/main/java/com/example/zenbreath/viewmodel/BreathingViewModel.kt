@@ -1,12 +1,14 @@
 package com.example.zenbreath.viewmodel
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.zenbreath.data.BreathingRepository
 import com.example.zenbreath.data.BreathingSession
 import com.example.zenbreath.service.HeartRateService
 import com.example.zenbreath.ui.screens.home.HomeUiState
+import com.example.zenbreath.data.sync.WearSyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -16,6 +18,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
@@ -28,15 +32,13 @@ import javax.inject.Inject
 @HiltViewModel
 class BreathingViewModel @Inject constructor(
     private val repository: BreathingRepository,
-    private val heartRateService: HeartRateService
+    private val heartRateService: HeartRateService,
+    private val wearSyncManager: WearSyncManager
 ) : ViewModel() {
 
-    init {
-        viewModelScope.launch {
-            heartRateService.checkAvailability()
-        }
-    }
-
+    private val _currentHeartRate = MutableStateFlow(0)
+    private val _startTimestamp = MutableStateFlow(0L)
+    private val _startHeartRate = MutableStateFlow(0)
     private val _timerDuration = MutableStateFlow(60000L)
     private val _remainingTime = MutableStateFlow(60000L)
     private val _totalReps = MutableStateFlow(10)
@@ -44,9 +46,45 @@ class BreathingViewModel @Inject constructor(
     private val _isRunning = MutableStateFlow(false)
     private val _selectedDate = MutableStateFlow(System.currentTimeMillis())
     private val _timerColor = MutableStateFlow(0xFF6200EE)
-    private val _currentHeartRate = MutableStateFlow(0)
-    private val _startTimestamp = MutableStateFlow(0L)
-    private val _startHeartRate = MutableStateFlow(0)
+
+    init {
+        viewModelScope.launch {
+            heartRateService.checkAvailability()
+        }
+
+        wearSyncManager.observeHeartRate()
+            .onEach { bpm ->
+                Log.d("BreathingViewModel", "Received BPM from watch flow: $bpm")
+                if (bpm > 0) {
+                    _currentHeartRate.value = bpm
+                    // Ensure the exercise knows about this if it's running
+                    if (_isRunning.value) {
+                        if (_startHeartRate.value == 0) {
+                            _startHeartRate.value = bpm
+                        }
+                    }
+                }
+            }
+            .launchIn(viewModelScope)
+
+        wearSyncManager.startMessageFlow
+            .onEach { 
+                Log.d("BreathingViewModel", "Start message received from wear")
+                startExercise() 
+            }
+            .launchIn(viewModelScope)
+
+        wearSyncManager.stopMessageFlow
+            .onEach { 
+                Log.d("BreathingViewModel", "Stop message received from wear")
+                stopExercise() 
+            }
+            .launchIn(viewModelScope)
+
+        combine(_isRunning, _startTimestamp) { isRunning, startTimestamp ->
+            wearSyncManager.updateActiveSession(isRunning, startTimestamp)
+        }.launchIn(viewModelScope)
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val filteredSessions: StateFlow<List<BreathingSession>> = _selectedDate
@@ -115,8 +153,17 @@ class BreathingViewModel @Inject constructor(
         if (_isRunning.value) return
         _isRunning.value = true
         _startTimestamp.value = System.currentTimeMillis()
-        _startHeartRate.value = heartRateService.getCurrentHeartRate()
-        _currentHeartRate.value = _startHeartRate.value
+        
+        // Use synced heart rate if available (> 0), otherwise fallback to service
+        val currentHR = if (_currentHeartRate.value > 0) {
+            _currentHeartRate.value
+        } else {
+            heartRateService.getCurrentHeartRate()
+        }
+        
+        _startHeartRate.value = currentHR
+        _currentHeartRate.value = currentHR
+
         _currentRep.value = _currentRep.value + 1
         _remainingTime.value = _timerDuration.value
         startTimer()
@@ -127,7 +174,14 @@ class BreathingViewModel @Inject constructor(
         timerJob?.cancel()
         _isRunning.value = false
         val endTimestamp = System.currentTimeMillis()
-        val endHeartRate = heartRateService.getCurrentHeartRate()
+        
+        // Use synced HR for end HR if available
+        val endHeartRate = if (_currentHeartRate.value > 0) {
+            _currentHeartRate.value
+        } else {
+            heartRateService.getCurrentHeartRate()
+        }
+
         viewModelScope.launch {
             val session = BreathingSession(
                 startTimestamp = _startTimestamp.value,
@@ -157,16 +211,24 @@ class BreathingViewModel @Inject constructor(
         timerJob?.cancel()
         val startTime = System.currentTimeMillis()
         val initialRemaining = _remainingTime.value
-        var lastHeartRateUpdate = 0L
         timerJob = viewModelScope.launch {
             while (_remainingTime.value > 0 && _isRunning.value) {
                 delay(50)
                 val currentTime = System.currentTimeMillis()
                 val elapsed = currentTime - startTime
                 _remainingTime.value = (initialRemaining - elapsed).coerceAtLeast(0)
-                if (currentTime - lastHeartRateUpdate >= 1000) {
-                    _currentHeartRate.value = heartRateService.getCurrentHeartRate()
-                    lastHeartRateUpdate = currentTime
+                
+                // Only update from heartRateService if we are not getting synced data 
+                // AND a local sensor is actually available
+                if (_currentHeartRate.value <= 0 && heartRateService.isAvailable.value) {
+                     // Check every second
+                     if (elapsed % 1000 < 50) {
+                         val localHR = heartRateService.getCurrentHeartRate()
+                         if (localHR > 0) {
+                             Log.d("BreathingViewModel", "Using local HR: $localHR")
+                             _currentHeartRate.value = localHR
+                         }
+                     }
                 }
             }
             if (_remainingTime.value <= 0) stopExercise()

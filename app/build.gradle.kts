@@ -63,6 +63,11 @@ dependencies {
     implementation(libs.androidx.adaptive.layout)
     implementation(libs.androidx.adaptive.navigation)
 
+    // Wearable Data Layer
+    implementation(libs.play.services.wearable)
+    implementation(libs.play.services.tasks)
+    implementation(libs.kotlinx.coroutines.play.services)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

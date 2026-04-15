@@ -31,24 +31,20 @@ class MainActivity : ComponentActivity() {
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val allGranted = permissions.values.all { it }
-        if (allGranted) {
-            Toast.makeText(this, "Permissions granted", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(
-                this,
-                "Some permissions denied. Heart rate monitoring may not work.",
-                Toast.LENGTH_LONG
-            ).show()
-        }
+        // No-op - we check permissions again in onResume if needed
     }
+
+    private var hasRequestedPermissions = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Request necessary permissions
-        requestPermissions()
+        // Only request once per activity session to avoid loops
+        if (!hasRequestedPermissions) {
+            checkAndRequestPermissionsSilently()
+            hasRequestedPermissions = true
+        }
 
         setContent {
             ZenBreathTheme {
@@ -59,33 +55,31 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * Request necessary permissions for heart rate and storage
-     */
-    private fun requestPermissions() {
+    override fun onResume() {
+        super.onResume()
+        // Removed checkAndRequestPermissionsSilently from here to prevent loops
+    }
+
+    private fun checkAndRequestPermissionsSilently() {
         val permissionsToRequest = mutableListOf<String>()
 
-        // Body sensors permission for heart rate
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.BODY_SENSORS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+        // Check if device actually has heart rate sensor before requesting BODY_SENSORS
+        val hasHeartRateSensor = packageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_HEART_RATE)
+        
+        if (hasHeartRateSensor && ContextCompat.checkSelfPermission(this, Manifest.permission.BODY_SENSORS) != PackageManager.PERMISSION_GRANTED) {
             permissionsToRequest.add(Manifest.permission.BODY_SENSORS)
         }
 
-        // Activity recognition (required for some health features)
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACTIVITY_RECOGNITION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED) {
             permissionsToRequest.add(Manifest.permission.ACTIVITY_RECOGNITION)
         }
 
-        // Request permissions if needed
         if (permissionsToRequest.isNotEmpty()) {
-            permissionLauncher.launch(permissionsToRequest.toTypedArray())
+            try {
+                permissionLauncher.launch(permissionsToRequest.toTypedArray())
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Failed to launch permission request", e)
+            }
         }
     }
 }

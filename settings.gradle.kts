@@ -24,4 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "ZenBreath"
 include(":app")
+include(":wear")
  

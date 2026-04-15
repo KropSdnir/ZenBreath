@@ -48,17 +48,9 @@ class HeartRateService @Inject constructor(
 
     /**
      * Get current heart rate
-     * Returns simulated value if sensor not available
      */
     fun getCurrentHeartRate(): Int {
-        // For testing purposes, return a simulated heart rate if sensor not available
-        // In production, this would use actual sensor data
-        return if (_isAvailable.value) {
-            _heartRate.value
-        } else {
-            // Simulated heart rate between 60-100 BPM
-            (60..100).random()
-        }
+        return _heartRate.value
     }
 
     /**
