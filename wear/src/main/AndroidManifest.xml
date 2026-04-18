@@ -32,7 +32,7 @@
             android:required="true" />
 
         <activity
-            android:name=".wear.presentation.MainActivity"
+            android:name=".wear.presentation.ZenBreathWatchMainActivity"
             android:exported="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.DeviceDefault">
@@ -43,10 +43,22 @@
         </activity>
 
         <service
-            android:name=".wear.data.health.WearHeartRateService"
+            android:name=".wear.data.health.ZenBreathWatchHeartRateService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="health" />
+
+        <service
+            android:name=".wear.data.sync.ZenBreathWearableListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/settings/user"
+                    android:scheme="wear" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

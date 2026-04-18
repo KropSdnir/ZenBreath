@@ -1,9 +1,10 @@
 package com.example.zenbreath.di
 
 import android.content.Context
-import com.example.zenbreath.data.AppDatabase
-import com.example.zenbreath.data.BreathingRepository
-import com.example.zenbreath.data.BreathingSessionDao
+import com.example.zenbreath.data.ZenBreathDatabase
+import com.example.zenbreath.data.ZenBreathRepository
+import com.example.zenbreath.data.ZenBreathSessionDao
+import com.example.zenbreath.data.ZenBreathWorkoutDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,18 +18,26 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
-        return AppDatabase.getDatabase(context)
+    fun provideDatabase(@ApplicationContext context: Context): ZenBreathDatabase {
+        return ZenBreathDatabase.getDatabase(context)
     }
 
     @Provides
-    fun provideBreathingSessionDao(database: AppDatabase): BreathingSessionDao {
-        return database.breathingSessionDao()
+    fun provideZenBreathSessionDao(database: ZenBreathDatabase): ZenBreathSessionDao {
+        return database.zenBreathSessionDao()
+    }
+
+    @Provides
+    fun provideZenBreathWorkoutDao(database: ZenBreathDatabase): ZenBreathWorkoutDao {
+        return database.zenBreathWorkoutDao()
     }
 
     @Provides
     @Singleton
-    fun provideRepository(dao: BreathingSessionDao): BreathingRepository {
-        return BreathingRepository(dao)
+    fun provideRepository(
+        sessionDao: ZenBreathSessionDao,
+        workoutDao: ZenBreathWorkoutDao
+    ): ZenBreathRepository {
+        return ZenBreathRepository(sessionDao, workoutDao)
     }
 }

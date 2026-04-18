@@ -9,7 +9,6 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.WindowAdaptiveInfo
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
-import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,20 +18,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.example.zenbreath.ui.screens.home.sections.HomeContent
 import com.example.zenbreath.ui.screens.home.sections.SessionHistoryList
-import com.example.zenbreath.viewmodel.BreathingViewModel
+import com.example.zenbreath.viewmodel.ZenBreathViewModel
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun AdaptiveHomeScreen(
-    viewModel: BreathingViewModel,
-    onTimerDurationEdit: () -> Unit,
-    onRepCountEdit: () -> Unit,
+    viewModel: ZenBreathViewModel,
     modifier: Modifier = Modifier,
     adaptiveInfo: WindowAdaptiveInfo = currentWindowAdaptiveInfo()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isExpanded = adaptiveInfo.windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
+    val windowSizeClass = adaptiveInfo.windowSizeClass.windowWidthSizeClass
+    val isExpanded = windowSizeClass == WindowWidthSizeClass.EXPANDED
     
     val navigator = rememberListDetailPaneScaffoldNavigator<Nothing>()
 
@@ -42,10 +40,15 @@ fun AdaptiveHomeScreen(
             HomeContent(
                 uiState = uiState,
                 onDateSelected = { viewModel.setSelectedDate(it) },
-                onTimerDurationEdit = onTimerDurationEdit,
-                onRepCountEdit = onRepCountEdit,
+                onUpdateTimer = { viewModel.updateTimerDuration(it) },
+                onUpdateReps = { viewModel.updateTotalReps(it) },
+                onUpdateTarget = { viewModel.updateTargetSeconds(it) },
+                windowWidthSizeClass = windowSizeClass,
                 onStartStopClick = {
                     if (uiState.isRunning) viewModel.stopExercise() else viewModel.startExercise()
+                },
+                onWorkoutToggle = {
+                    if (uiState.isWorkoutActive) viewModel.stopWorkout() else viewModel.startWorkout()
                 },
                 onResetRepsClick = { viewModel.resetReps() },
                 onDeleteSession = { viewModel.deleteSession(it) },
@@ -74,16 +77,21 @@ fun AdaptiveHomeScreen(
                 HomeContent(
                     uiState = uiState,
                     onDateSelected = { viewModel.setSelectedDate(it) },
-                    onTimerDurationEdit = onTimerDurationEdit,
-                    onRepCountEdit = onRepCountEdit,
-                    onStartStopClick = {
-                        if (uiState.isRunning) viewModel.stopExercise() else viewModel.startExercise()
-                    },
-                    onResetRepsClick = { viewModel.resetReps() },
-                    onDeleteSession = { viewModel.deleteSession(it) },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
+                    onUpdateTimer = { viewModel.updateTimerDuration(it) },
+                    onUpdateReps = { viewModel.updateTotalReps(it) },
+                    onUpdateTarget = { viewModel.updateTargetSeconds(it) },
+                    windowWidthSizeClass = windowSizeClass,
+                onStartStopClick = {
+                    if (uiState.isRunning) viewModel.stopExercise() else viewModel.startExercise()
+                },
+                onWorkoutToggle = {
+                    if (uiState.isWorkoutActive) viewModel.stopWorkout() else viewModel.startWorkout()
+                },
+                onResetRepsClick = { viewModel.resetReps() },
+                onDeleteSession = { viewModel.deleteSession(it) },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
                 )
             },
             detailPane = {

@@ -4,8 +4,8 @@ import android.content.Context
 import androidx.health.services.client.HealthServices
 import androidx.health.services.client.HealthServicesClient
 import androidx.room.Room
-import com.example.zenbreath.wear.data.local.WearDatabase
-import com.example.zenbreath.wear.data.local.WearSessionDao
+import com.example.zenbreath.wear.data.local.ZenBreathWatchDatabase
+import com.example.zenbreath.wear.data.local.ZenBreathWatchSessionDao
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.Wearable
@@ -40,16 +40,18 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideWearDatabase(@ApplicationContext context: Context): WearDatabase {
+    fun provideZenBreathWatchDatabase(@ApplicationContext context: Context): ZenBreathWatchDatabase {
         return Room.databaseBuilder(
             context,
-            WearDatabase::class.java,
-            "wear_zenbreath.db"
-        ).build()
+            ZenBreathWatchDatabase::class.java,
+            "zenbreath_watch.db"
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
-    fun provideWearSessionDao(database: WearDatabase): WearSessionDao {
-        return database.wearSessionDao()
+    fun provideZenBreathWatchSessionDao(database: ZenBreathWatchDatabase): ZenBreathWatchSessionDao {
+        return database.zenBreathSessionDao()
     }
 }

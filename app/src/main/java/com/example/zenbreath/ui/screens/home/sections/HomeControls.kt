@@ -1,13 +1,17 @@
 package com.example.zenbreath.ui.screens.home.sections
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
+import androidx.window.core.layout.WindowWidthSizeClass
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -23,51 +27,107 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun TimerDurationSelector(
+fun SessionSettingsRow(
     timerDurationSeconds: Long,
-    onEditClick: () -> Unit,
+    totalReps: Int,
+    targetSeconds: Int,
+    onUpdateTimer: (Int) -> Unit,
+    onUpdateReps: (Int) -> Unit,
+    onUpdateTarget: (Int) -> Unit,
     isRunning: Boolean,
+    isCountUp: Boolean,
+    windowWidthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier
 ) {
+    val isNarrow = windowWidthSizeClass == WindowWidthSizeClass.COMPACT
+
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
+        horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "Timer: ${timerDurationSeconds}s",
-            style = MaterialTheme.typography.titleMedium
+        // Rep Adjustment (Always on the left)
+        AdjustmentControl(
+            label = "Reps",
+            value = "$totalReps",
+            onDecrement = { onUpdateReps(-1) },
+            onIncrement = { onUpdateReps(1) },
+            enabled = !isRunning,
+            compact = isNarrow
         )
-        IconButton(
-            onClick = onEditClick,
-            enabled = !isRunning
-        ) {
-            Icon(Icons.Default.Edit, contentDescription = "Edit timer")
+
+        // Timer Adjustment (Only show if NOT count up - i.e. Countdown mode)
+        if (!isCountUp) {
+            AdjustmentControl(
+                label = "Timer (s)",
+                value = "$timerDurationSeconds",
+                onDecrement = { onUpdateTimer(-5) },
+                onIncrement = { onUpdateTimer(5) },
+                enabled = !isRunning,
+                compact = isNarrow
+            )
+        }
+
+        // Target Adjustment (Only show if Count Up mode)
+        if (isCountUp) {
+            AdjustmentControl(
+                label = "Target (s)",
+                value = "$targetSeconds",
+                onDecrement = { onUpdateTarget(-5) },
+                onIncrement = { onUpdateTarget(5) },
+                enabled = !isRunning,
+                compact = isNarrow
+            )
         }
     }
 }
 
 @Composable
-fun RepSelector(
-    totalReps: Int,
-    onEditClick: () -> Unit,
-    isRunning: Boolean,
-    modifier: Modifier = Modifier
+private fun AdjustmentControl(
+    label: String,
+    value: String,
+    onDecrement: () -> Unit,
+    onIncrement: () -> Unit,
+    enabled: Boolean,
+    compact: Boolean = false
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "Rep: $totalReps",
-            style = MaterialTheme.typography.titleMedium
-        )
-        IconButton(
-            onClick = onEditClick,
-            enabled = !isRunning
-        ) {
-            Icon(Icons.Default.Edit, contentDescription = "Edit reps")
+    val iconSize = if (compact) 32.dp else 48.dp
+    
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = label, style = MaterialTheme.typography.labelMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onDecrement, 
+                    enabled = enabled,
+                    modifier = Modifier.size(iconSize)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown, 
+                        contentDescription = "Decrease $label",
+                        modifier = Modifier.size(if (compact) 20.dp else 24.dp)
+                    )
+                }
+                Text(
+                    text = value,
+                    style = if (compact) {
+                        MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+                    } else {
+                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    }
+                )
+                IconButton(
+                    onClick = onIncrement, 
+                    enabled = enabled,
+                    modifier = Modifier.size(iconSize)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp, 
+                        contentDescription = "Increase $label",
+                        modifier = Modifier.size(if (compact) 20.dp else 24.dp)
+                    )
+                }
+            }
         }
     }
 }

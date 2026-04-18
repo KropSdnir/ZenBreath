@@ -88,6 +88,9 @@ dependencies {
     implementation(libs.guava)
     implementation(libs.kotlinx.coroutines.guava)
 
+    // DataStore
+    implementation("androidx.datastore:datastore-preferences:1.1.2")
+
     testImplementation(libs.junit)
     testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)

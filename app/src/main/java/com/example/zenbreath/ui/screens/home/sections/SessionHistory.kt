@@ -14,14 +14,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.zenbreath.data.BreathingSession
+import com.example.zenbreath.data.ZenBreathSession
 import com.example.zenbreath.ui.components.SessionItem
 
 @Composable
 fun SessionHistoryHeader(modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = "Session History",
+            text = "Session History Test",
             style = MaterialTheme.typography.titleLarge.copy(
                 fontWeight = FontWeight.Bold
             )
@@ -32,7 +32,7 @@ fun SessionHistoryHeader(modifier: Modifier = Modifier) {
 
 @Composable
 fun SessionHistoryList(
-    sessions: List<BreathingSession>,
+    sessions: List<ZenBreathSession>,
     onDelete: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {

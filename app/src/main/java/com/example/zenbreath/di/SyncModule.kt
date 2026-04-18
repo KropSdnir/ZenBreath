@@ -1,6 +1,7 @@
 package com.example.zenbreath.di
 
 import android.content.Context
+import com.example.zenbreath.data.sync.ZenBreathSyncManager
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.Wearable
@@ -25,5 +26,11 @@ object SyncModule {
     @Singleton
     fun provideMessageClient(@ApplicationContext context: Context): MessageClient {
         return Wearable.getMessageClient(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSyncManager(dataClient: DataClient, messageClient: MessageClient): ZenBreathSyncManager {
+        return ZenBreathSyncManager(dataClient, messageClient)
     }
 }

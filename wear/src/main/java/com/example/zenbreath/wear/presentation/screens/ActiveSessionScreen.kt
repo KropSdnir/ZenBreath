@@ -5,7 +5,6 @@ import android.os.Vibrator
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.*
@@ -24,14 +23,13 @@ import androidx.wear.compose.material3.MaterialTheme
 import java.util.Locale
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TimeText
-import com.example.zenbreath.wear.data.sync.WearSyncManager
-import com.example.zenbreath.wear.presentation.viewmodel.SessionViewModel
-import kotlinx.coroutines.launch
+import com.example.zenbreath.wear.data.sync.ZenBreathSyncManager
+import com.example.zenbreath.wear.presentation.viewmodel.ZenBreathSessionViewModel
 
 @Composable
 fun ActiveSessionScreen(
-    syncManager: WearSyncManager,
-    viewModel: SessionViewModel,
+    syncManager: ZenBreathSyncManager,
+    viewModel: ZenBreathSessionViewModel,
     startTime: Long,
     isAmbient: Boolean = false,
     onStopSession: () -> Unit

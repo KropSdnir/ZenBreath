@@ -34,6 +34,7 @@ android {
 }
 
 dependencies {
+    implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -42,6 +43,9 @@ dependencies {
     implementation(libs.androidx.wear.compose.material3)
     implementation(libs.androidx.wear.compose.foundation)
     implementation(libs.androidx.wear.compose.ui.tooling)
+    
+    // Icons
+    implementation("androidx.compose.material:material-icons-core")
     
     // Horologist
     implementation(libs.horologist.datalayer)
